@@ -112,6 +112,7 @@ module Puppet
         if FileTest.exist?(dir)
             return false
         else
+            raise Puppet::DevError "fails on windows"
             tmp = dir.sub(/^\//,'')
             path = [File::SEPARATOR]
             tmp.split(File::SEPARATOR).each { |dir|

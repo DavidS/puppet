@@ -156,8 +156,12 @@ describe Puppet::Util::Log do
         end
 
         describe "when setting the source as a RAL object" do
+            before do
+                @path = Puppet.features.posix? ? "/foo/bar" : "C:/tmp"
+            end
+            
             it "should tag itself with any tags the source has" do
-                source = Puppet::Type.type(:file).new :path => "/foo/bar"
+                source = Puppet::Type.type(:file).new :path => @path
                 log = Puppet::Util::Log.new(:level => "notice", :message => :foo, :source => source)
                 source.tags.each do |tag|
                     log.tags.should be_include(tag)
@@ -166,7 +170,7 @@ describe Puppet::Util::Log do
 
             it "should use the source_descriptors" do
                 source = stub "source"
-                source.stubs(:source_descriptors).returns(:tags => ["tag","tag2"], :path => "path", :version => 100)
+                source.stubs(:source_descriptors).returns(:tags => ["tag","tag2"], :path => @path, :version => 100)
                 
                 log = Puppet::Util::Log.new(:level => "notice", :message => :foo)
                 log.expects(:tag).with("tag")
@@ -175,13 +179,13 @@ describe Puppet::Util::Log do
 
                 log.source = source
 
-                log.source.should == "path"
+                log.source.should == @path
             end
 
             it "should copy over any version information" do
                 catalog = Puppet::Resource::Catalog.new
                 catalog.version = 25
-                source = Puppet::Type.type(:file).new :path => "/foo/bar"
+                source = Puppet::Type.type(:file).new :path => @path
                 catalog.add_resource source
 
                 log = Puppet::Util::Log.new(:level => "notice", :message => :foo, :source => source)
@@ -189,7 +193,7 @@ describe Puppet::Util::Log do
             end
 
             it "should copy over any file and line information" do
-                source = Puppet::Type.type(:file).new :path => "/foo/bar"
+                source = Puppet::Type.type(:file).new :path => @path
                 source.file = "/my/file"
                 source.line = 50
                 log = Puppet::Util::Log.new(:level => "notice", :message => :foo, :source => source)
