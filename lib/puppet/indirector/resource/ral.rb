@@ -35,6 +35,9 @@ class Puppet::Resource::Ral < Puppet::Indirector::Code
     res = request.instance
     ral_res = res.to_ral
 
+    # require'pry'
+    # binding.pry
+
     catalog = Puppet::Resource::Catalog.new(nil, request.environment)
     catalog.add_resource ral_res
     transaction = catalog.apply

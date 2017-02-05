@@ -1,4 +1,5 @@
 require 'puppet/resource/status'
+require 'pry'
 
 class Puppet::Transaction::ResourceHarness
   NO_ACTION = Object.new
@@ -287,6 +288,7 @@ class Puppet::Transaction::ResourceHarness
     end
   end
 
+
   # @api private
   ResourceApplicationContext = Struct.new(:resource,
                                           :current_values,
@@ -296,6 +298,7 @@ class Puppet::Transaction::ResourceHarness
                                           :status,
                                           :system_value_params) do
     def self.from_resource(resource, status)
+      # binding.pry
       ResourceApplicationContext.new(resource,
                                      resource.retrieve_resource.to_hash,
                                      Puppet::Util::Storage.cache(resource).dup,

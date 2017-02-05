@@ -498,6 +498,7 @@ class Puppet::Property < Puppet::Parameter
       # the blocks could return values.
       self.instance_eval(&block)
     else
+      require 'pry';binding.pry
       call_provider(value)
     end
   end
