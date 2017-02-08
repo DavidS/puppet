@@ -29,7 +29,7 @@ module Puppet::SimpleResource
     end
 
     def prune_parameters(*args)
-      # puts args.inspect
+      puts "not pruning #{args.inspect}" if args.length > 0
       self
     end
 
@@ -97,7 +97,7 @@ Puppet::Type.newtype(:api) do
 
   def retrieve
     puts 'retrieve'
-    result = Puppet::Resource.new(self.class, title)
+    result        = Puppet::Resource.new(self.class, title)
     current_state = self.class.get.first { |resource_hash| resource_hash[:name] == title }
 
     current_state.each do |k, v|
@@ -111,7 +111,7 @@ Puppet::Type.newtype(:api) do
   def flush
     puts 'flush'
     # binding.pry
-    target_state = Hash[@parameters.collect { |k,v| [k, v.value] }]
+    target_state = Hash[@parameters.collect { |k, v| [k, v.value] }]
     self.class.set([@rapi_current_state], [target_state], false)
   end
 end
