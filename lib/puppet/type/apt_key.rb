@@ -72,7 +72,7 @@ DEFINITION = {
             read_only: true,
         },
         size:        {
-            type:      'String',
+            type:      'Integer',
             docs:      'The key size, usually a multiple of 1024.',
             read_only: true,
         },
@@ -97,8 +97,12 @@ module Puppet::SimpleResource
   class TypeShim
     attr_reader :values
 
-    def initialize(resource_hash)
-      @values = resource_hash.dup.freeze # whatevs
+    def initialize(title, resource_hash)
+      # internalize and protect - needs to go deeper
+      @values        = resource_hash.dup
+      # "name" is a privileged key
+      @values[:name] = title
+      @values.freeze
     end
 
     def to_resource
@@ -128,8 +132,8 @@ module Puppet::SimpleResource
 
     def to_manifest
       [
-          "apt_key { #{values[:name]}: ",
-      ] + values.keys.select { |k| k != :name }.collect { |k| "  #{k} => #{values[k]}," } + ['}']
+          "apt_key { #{values[:name].inspect}: ",
+      ] + values.keys.select { |k| k != :name }.collect { |k| "  #{k} => #{values[k].inspect}," } + ['}']
     end
   end
 end
@@ -212,8 +216,9 @@ Puppet::Type.newtype(DEFINITION[:name].to_sym) do
             # the namevar needs to be a Parameter, which only has newvalue*s*
             newvalues(/\A(0x)?[0-9a-fA-F]{8}\Z/, /\A(0x)?[0-9a-fA-F]{16}\Z/, /\A(0x)?[0-9a-fA-F]{40}\Z/)
           when 'Optional[String]'
-            validate do |v|
-              v.nil? || v.is_a?(String)
+            newvalue :undef do
+            end
+            newvalue // do
             end
           when 'Variant[Stdlib::Absolutepath, Pattern[/\A(https?|ftp):\/\//]]'
             # TODO: this is wrong, but matches original implementation
@@ -232,131 +237,117 @@ Puppet::Type.newtype(DEFINITION[:name].to_sym) do
     fail("#{DEFINITION[:name]} has no namevar")
   end
 
-  def self.get
-    puts 'get'
-    [{:name => "BBCB188AD7B3228BCF05BD554C0BE21B5FF054BD", :ensure => "present", :fingerprint => "BBCB188AD7B3228BCF05BD554C0BE21B5FF054BD", :long => "4C0BE21B5FF054BD", :short => "5FF054BD", :size => "2048", :type => :rsa, :created => "2013-06-07 23:55:31 +0100", :expiry => nil, :expired => false},
-     {:name => "B71ACDE6B52658D12C3106F44AB781597254279C", :ensure => "present", :fingerprint => "B71ACDE6B52658D12C3106F44AB781597254279C", :long => "4AB781597254279C", :short => "7254279C", :size => "1024", :type => :dsa, :created => "2007-03-08 20:17:10 +0000", :expiry => nil, :expired => false},
-     {:name        => "9534C9C4130B4DC9927992BF4F30B6B4C07CB649",
-      :ensure      => "present",
-      :fingerprint => "9534C9C4130B4DC9927992BF4F30B6B4C07CB649",
-      :long        => "4F30B6B4C07CB649",
-      :short       => "C07CB649",
-      :size        => "4096",
-      :type        => :rsa,
-      :created     => "2014-11-21 21:01:13 +0000",
-      :expiry      => "2022-11-19 21:01:13 +0000",
-      :expired     => false},
-     {:name        => "126C0D24BD8A2942CC7DF8AC7638D0442B90D010",
-      :ensure      => "present",
-      :fingerprint => "126C0D24BD8A2942CC7DF8AC7638D0442B90D010",
-      :long        => "7638D0442B90D010",
-      :short       => "2B90D010",
-      :size        => "4096",
-      :type        => :rsa,
-      :created     => "2014-11-21 21:13:37 +0000",
-      :expiry      => "2022-11-19 21:13:37 +0000",
-      :expired     => false},
-     {:name        => "D21169141CECD440F2EB8DDA9D6D8F6BC857C906",
-      :ensure      => "present",
-      :fingerprint => "D21169141CECD440F2EB8DDA9D6D8F6BC857C906",
-      :long        => "9D6D8F6BC857C906",
-      :short       => "C857C906",
-      :size        => "4096",
-      :type        => :rsa,
-      :created     => "2013-08-17 12:36:56 +0100",
-      :expiry      => "2021-08-15 12:36:56 +0100",
-      :expired     => false},
-     {:name        => "75DDC3C4A499F1A18CB5F3C8CBF8D6FD518E17E1",
-      :ensure      => "present",
-      :fingerprint => "75DDC3C4A499F1A18CB5F3C8CBF8D6FD518E17E1",
-      :long        => "CBF8D6FD518E17E1",
-      :short       => "518E17E1",
-      :size        => "4096",
-      :type        => :rsa,
-      :created     => "2010-08-27 21:23:43 +0100",
-      :expiry      => "2018-03-05 20:23:43 +0000",
-      :expired     => false},
-     {:name        => "9FED2BCBDCD29CDF762678CBAED4B06F473041FA",
-      :ensure      => "present",
-      :fingerprint => "9FED2BCBDCD29CDF762678CBAED4B06F473041FA",
-      :long        => "AED4B06F473041FA",
-      :short       => "473041FA",
-      :size        => "4096",
-      :type        => :rsa,
-      :created     => "2010-08-07 01:21:01 +0100",
-      :expiry      => "2017-08-05 01:21:01 +0100",
-      :expired     => false},
-     {:name        => "0E4EDE2C7F3E1FC0D033800E64481591B98321F9",
-      :ensure      => "present",
-      :fingerprint => "0E4EDE2C7F3E1FC0D033800E64481591B98321F9",
-      :long        => "64481591B98321F9",
-      :short       => "B98321F9",
-      :size        => "4096",
-      :type        => :rsa,
-      :created     => "2012-04-27 20:08:37 +0100",
-      :expiry      => "2020-04-25 20:08:37 +0100",
-      :expired     => false},
-     {:name        => "A1BD8E9D78F7FE5C3E65D8AF8B48AD6246925553",
-      :ensure      => "present",
-      :fingerprint => "A1BD8E9D78F7FE5C3E65D8AF8B48AD6246925553",
-      :long        => "8B48AD6246925553",
-      :short       => "46925553",
-      :size        => "4096",
-      :type        => :rsa,
-      :created     => "2012-05-08 16:11:49 +0100",
-      :expiry      => "2019-05-07 16:11:49 +0100",
-      :expired     => false},
-     {:name        => "ED6D65271AACF0FF15D123036FB2A1C265FFB764",
-      :ensure      => "present",
-      :fingerprint => "ED6D65271AACF0FF15D123036FB2A1C265FFB764",
-      :long        => "6FB2A1C265FFB764",
-      :short       => "65FFB764",
-      :size        => "4096",
-      :type        => :rsa,
-      :created     => "2010-07-10 01:13:52 +0100",
-      :expiry      => "2017-01-05 00:06:37 +0000",
-      :expired     => true},
-     {:name        => "47B320EB4C7C375AA9DAE1A01054B7A24BD6EC30",
-      :ensure      => "present",
-      :fingerprint => "47B320EB4C7C375AA9DAE1A01054B7A24BD6EC30",
-      :long        => "1054B7A24BD6EC30",
-      :short       => "4BD6EC30",
-      :size        => "4096",
-      :type        => :rsa,
-      :created     => "2013-02-06 00:06:17 +0000",
-      :expiry      => "2019-02-11 18:39:07 +0000",
-      :expired     => false},
-     {:name        => "F838D657CCAF0E4A6375B0E9AE8282E5A5FC3E74",
-      :ensure      => "present",
-      :fingerprint => "F838D657CCAF0E4A6375B0E9AE8282E5A5FC3E74",
-      :long        => "AE8282E5A5FC3E74",
-      :short       => "A5FC3E74",
-      :size        => "4096",
-      :type        => :rsa,
-      :created     => "2016-08-18 22:06:06 +0100",
-      :expiry      => "2021-08-17 22:06:06 +0100",
-      :expired     => false}]
+  def self.fake_system_state
+    @fake_system_state ||= {
+        'BBCB188AD7B3228BCF05BD554C0BE21B5FF054BD' => {
+            ensure:      :present,
+            fingerprint: 'BBCB188AD7B3228BCF05BD554C0BE21B5FF054BD',
+            long:        '4C0BE21B5FF054BD',
+            short:       '5FF054BD',
+            size:        2048,
+            type:        :rsa,
+            created:     '2013-06-07 23:55:31 +0100',
+            expiry:      nil,
+            expired:     false,
+        },
+        'B71ACDE6B52658D12C3106F44AB781597254279C' => {
+            ensure:      :present,
+            fingerprint: 'B71ACDE6B52658D12C3106F44AB781597254279C',
+            long:        '4AB781597254279C',
+            short:       '7254279C',
+            size:        1024,
+            type:        :dsa,
+            created:     '2007-03-08 20:17:10 +0000',
+            expiry:      nil,
+            expired:     false
+        },
+        '9534C9C4130B4DC9927992BF4F30B6B4C07CB649' => {
+            ensure:      :present,
+            fingerprint: '9534C9C4130B4DC9927992BF4F30B6B4C07CB649',
+            long:        '4F30B6B4C07CB649',
+            short:       'C07CB649',
+            size:        4096,
+            type:        :rsa,
+            created:     '2014-11-21 21:01:13 +0000',
+            expiry:      '2022-11-19 21:01:13 +0000',
+            expired:     false
+        },
+        '126C0D24BD8A2942CC7DF8AC7638D0442B90D010' => {
+            ensure:      :present,
+            fingerprint: '126C0D24BD8A2942CC7DF8AC7638D0442B90D010',
+            long:        '7638D0442B90D010',
+            short:       '2B90D010',
+            size:        4096,
+            type:        :rsa,
+            created:     '2014-11-21 21:13:37 +0000',
+            expiry:      '2022-11-19 21:13:37 +0000',
+            expired:     false
+        },
+        'ED6D65271AACF0FF15D123036FB2A1C265FFB764' => {
+            ensure:      :present,
+            fingerprint: 'ED6D65271AACF0FF15D123036FB2A1C265FFB764',
+            long:        '6FB2A1C265FFB764',
+            short:       '65FFB764',
+            size:        4096,
+            type:        :rsa,
+            created:     '2010-07-10 01:13:52 +0100',
+            expiry:      '2017-01-05 00:06:37 +0000',
+            expired:     true
+        },
+    }
   end
 
-  def self.set(current_state, target_state, noop=false)
-    puts "setting #{target_state} onto #{current_state} (noop=#{noop})"
+  def self.get
+    puts 'get'
+    fake_system_state
+  end
+
+  def self.set(current_state, target_state, noop = false)
+    puts "enforcing change from #{current_state} to #{target_state} (noop=#{noop})"
+    target_state.each do |title, resource|
+      # additional validation for this resource goes here
+
+      # set default value
+      resource[:ensure] ||= :present
+
+      current = current_state[title]
+      if current && resource[:ensure].to_s == 'absent'
+        # delete the resource
+        puts "deleting #{title}"
+        fake_system_state.delete_if { |k, _| k==title }
+      elsif current && resource[:ensure].to_s == 'present'
+        # update the resource
+        puts "updating #{title}"
+        resource = current.merge(resource)
+        fake_system_state[title] = resource.dup
+      elsif !current && resource[:ensure].to_s == 'present'
+        # create the resource
+        puts "creating #{title}"
+        fake_system_state[title] = resource.dup
+      end
+      # TODO: update Type's notion of reality to ensure correct puppet resource output with all available attributes
+    end
   end
 
   def self.instances
     puts 'instances'
     # klass = Puppet::Type.type(:api)
-    get.collect do |resource_hash|
-      Puppet::SimpleResource::TypeShim.new(resource_hash)
+    get.collect do |title, resource_hash|
+      Puppet::SimpleResource::TypeShim.new(title, resource_hash)
     end
   end
 
   def retrieve
     puts 'retrieve'
     result        = Puppet::Resource.new(self.class, title)
-    current_state = self.class.get.first { |resource_hash| resource_hash[:name] == title }
+    current_state = self.class.get[title]
 
-    current_state.each do |k, v|
-      result[k]=v
+    if current_state
+      current_state.each do |k, v|
+        result[k]=v
+      end
+    else
+      result[:ensure] = :absent
     end
 
     @rapi_current_state = current_state
@@ -367,7 +358,7 @@ Puppet::Type.newtype(DEFINITION[:name].to_sym) do
     puts 'flush'
     # binding.pry
     target_state = Hash[@parameters.collect { |k, v| [k, v.value] }]
-    self.class.set([@rapi_current_state], [target_state], false)
+    self.class.set({title => @rapi_current_state}, {title => target_state}, false)
   end
 
 end
