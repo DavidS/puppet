@@ -9,9 +9,9 @@ class Puppet::Application::Device < Puppet::Application
 
   def app_defaults
     super.merge({
-      :catalog_terminus => :rest,
-      :catalog_cache_terminus => :json,
-      :node_terminus => :rest,
+      # :catalog_terminus => :rest,
+      # :catalog_cache_terminus => :json,
+      # :node_terminus => :rest,
       :facts_terminus => :network_device,
     })
   end
@@ -44,6 +44,10 @@ class Puppet::Application::Device < Puppet::Application
 
   option("--detailed-exitcodes") do |arg|
     options[:detailed_exitcodes] = true
+  end
+
+  option("--apply MANIFEST") do |arg|
+    options[:apply] = arg.to_s
   end
 
   option("--logdest DEST", "-l DEST") do |arg|
@@ -227,13 +231,29 @@ Licensed under the Apache 2.0 License
           # and the various network_device provider can use it
           Puppet::Util::NetworkDevice.init(device)
 
-          # ask for a ssl cert if needed, but at least
-          # setup the ssl system for this device.
-          setup_host
+          if options.has_key? :apply
+            # avoid reporting to server
+            Puppet::Transaction::Report.indirection.terminus_class = :yaml
+            Puppet::Transaction::Report.indirection.cache_class = :yaml
 
-          require 'puppet/configurer'
-          configurer = Puppet::Configurer.new
-          configurer.run(:network_device => true, :pluginsync => Puppet::Configurer.should_pluginsync?)
+            require 'puppet/application/apply'
+            f = Tempfile.new('apply')
+            f.write options[:apply]
+            f.close
+            begin
+              Puppet::Application::Apply.new(Puppet::Util::CommandLine.new('puppet', ["apply", f.path])).run_command
+            ensure
+              f.unlink
+            end
+          else
+            # ask for a ssl cert if needed, but at least
+            # setup the ssl system for this device.
+            setup_host
+
+            require 'puppet/configurer'
+            configurer = Puppet::Configurer.new
+            configurer.run(:network_device => true, :pluginsync => Puppet::Configurer.should_pluginsync?)
+          end
         rescue => detail
           Puppet.log_exception(detail)
           # If we rescued an error, then we return 1 as the exit code
