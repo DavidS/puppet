@@ -247,11 +247,18 @@ Licensed under the Apache 2.0 License
           # Handle nil scheme & port
           scheme = "#{device_url.scheme}://" if device_url.scheme
           port = ":#{device_url.port}" if device_url.port
-
+          # require'pry';binding.pry
+          puts "vardir before configuring: #{Puppet[:vardir]}"
+          puts "libdir before configuring: #{Puppet[:libdir]}"
+          puts "$LOAD_PATH.last before configuring: #{$LOAD_PATH.last}"
           # override local $vardir and $certname
           Puppet[:confdir] = ::File.join(Puppet[:devicedir], device.name)
           Puppet[:vardir] = ::File.join(Puppet[:devicedir], device.name)
           Puppet[:certname] = device.name
+          # require'pry';binding.pry
+          puts "vardir after configuring: #{Puppet[:vardir]}"
+          puts "libdir after configuring: #{Puppet[:libdir]}"
+          puts "$LOAD_PATH.last after configuring: #{$LOAD_PATH.last}"
 
           # this init the device singleton, so that the facts terminus
           # and the various network_device provider can use it
