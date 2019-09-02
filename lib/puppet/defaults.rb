@@ -536,6 +536,33 @@ module Puppet
       :default => 'facter',
       :desc => "The node facts terminus.",
     },
+    :trusted_external_terminus => {
+      :type       => :terminus,
+      :default    => "none",
+      :desc       => <<-'EOT',
+        Which external trusted facts data plugin to use when compiling catalogs.
+
+        The main node data plugins are:
+
+        * `none` --- Returns no data.
+        * `exec` --- Uses an external trusted facts script configured
+          by the `trusted_external_command` setting. This lets you pull a
+          list of external trusted facts, using a small glue script to
+          perform the request and format the result as JSON.
+      EOT
+    },
+    :trusted_external_command => {
+      :default  => "none",
+      :desc     => "The external trusted facts script to use.
+        To enable this setting, set the `trusted_external_terminus` setting to `exec`.
+
+        This setting's value must be the path to an executable command that
+        can produce external trusted facts. The command must:
+
+        * Take the name of a node as a command-line argument.
+        * Return a JSON hash with the external trusted facts for this node.
+        * For unknown nodes, exit with a non-zero exit code.",
+    },
     :default_file_terminus => {
       :type       => :terminus,
       :default    => "rest",

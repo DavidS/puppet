@@ -30,6 +30,12 @@ describe Puppet::Context::TrustedInformation, :unless => RUBY_PLATFORM == 'java'
     cert
   end
 
+  let(:trusted_external) { { "external" => "data" } }
+
+  before(:each) do
+    allow(Puppet::TrustedExternal.indirection).to receive(:find).and_return(trusted_external)
+  end
+
   context "when remote" do
     it "has no cert information when it isn't authenticated" do
       trusted = Puppet::Context::TrustedInformation.remote(false, 'ignored', nil)
@@ -37,6 +43,7 @@ describe Puppet::Context::TrustedInformation, :unless => RUBY_PLATFORM == 'java'
       expect(trusted.authenticated).to eq(false)
       expect(trusted.certname).to be_nil
       expect(trusted.extensions).to eq({})
+      expect(trusted.external).to eq({ "external" => "data" })
     end
 
     it "is remote and has certificate information when it is authenticated" do
@@ -50,6 +57,7 @@ describe Puppet::Context::TrustedInformation, :unless => RUBY_PLATFORM == 'java'
       })
       expect(trusted.hostname).to eq('cert name')
       expect(trusted.domain).to be_nil
+      expect(trusted.external).to eq({ "external" => "data" })
     end
 
     it "is remote but lacks certificate information when it is authenticated" do
@@ -60,6 +68,7 @@ describe Puppet::Context::TrustedInformation, :unless => RUBY_PLATFORM == 'java'
       expect(trusted.authenticated).to eq('remote')
       expect(trusted.certname).to eq('cert name')
       expect(trusted.extensions).to eq({})
+      expect(trusted.external).to eq({ "external" => "data" })
     end
   end
 
@@ -74,6 +83,7 @@ describe Puppet::Context::TrustedInformation, :unless => RUBY_PLATFORM == 'java'
       expect(trusted.extensions).to eq({})
       expect(trusted.hostname).to eq('cert name')
       expect(trusted.domain).to be_nil
+      expect(trusted.external).to eq({ "external" => "data" })
     end
 
     it "is authenticated local with no clientcert when there is no node" do
@@ -84,6 +94,7 @@ describe Puppet::Context::TrustedInformation, :unless => RUBY_PLATFORM == 'java'
       expect(trusted.extensions).to eq({})
       expect(trusted.hostname).to be_nil
       expect(trusted.domain).to be_nil
+      expect(trusted.external).to eq({ "external" => "data" })
     end
   end
 
@@ -98,7 +109,8 @@ describe Puppet::Context::TrustedInformation, :unless => RUBY_PLATFORM == 'java'
         '1.3.6.1.4.1.34380.1.2.2' => 'more CSR specific info',
       },
       'hostname' => 'cert name',
-      'domain' => nil
+      'domain' => nil,
+      'external' => { "external" => "data" },
     })
   end
 
@@ -113,7 +125,8 @@ describe Puppet::Context::TrustedInformation, :unless => RUBY_PLATFORM == 'java'
         '1.3.6.1.4.1.34380.1.2.2' => 'more CSR specific info',
       },
       'hostname' => 'hostname',
-      'domain' => 'domain.long'
+      'domain' => 'domain.long',
+      'external' => { "external" => "data" },
     })
   end
 
@@ -121,6 +134,32 @@ describe Puppet::Context::TrustedInformation, :unless => RUBY_PLATFORM == 'java'
     trusted = Puppet::Context::TrustedInformation.remote(true, 'cert name', cert)
 
     expect(trusted.to_h).to be_deeply_frozen
+  end
+
+  describe '#deep_freeze(object)' do
+    describe 'a string' do
+      subject { described_class.deep_freeze("str") }
+      it { is_expected.to eq "str" }
+      it { is_expected.to be_deeply_frozen }
+    end
+
+    describe 'an array containing a string' do
+      subject { described_class.deep_freeze(["str"]) }
+      it { is_expected.to eq ["str"] }
+      it { is_expected.to be_deeply_frozen }
+    end
+
+    describe 'a hash with strings' do
+      subject { described_class.deep_freeze({ "key" => "value" }) }
+      it { is_expected.to eq({ "key" => "value" }) }
+      it { is_expected.to be_deeply_frozen }
+    end
+
+    describe 'a deeply nested structure' do
+      subject { described_class.deep_freeze([{ "key" => ["value1", "value2"], 1 => true }]) }
+      it { is_expected.to eq [{ "key" => ["value1", "value2"], 1 => true }] }
+      it { is_expected.to be_deeply_frozen }
+    end
   end
 
   matcher :be_deeply_frozen do
